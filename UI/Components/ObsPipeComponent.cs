@@ -1,22 +1,30 @@
-﻿using LiveSplit.Model;
-using LiveSplit.Options;
-using System.Windows.Forms;
-using System.Xml;
+﻿using Continental.eCAL.Core;
+using Google.Protobuf;
+using LiveSplit.Model;
+using LiveSplit.ObsPipe;
 using System;
-using System.IO;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Runtime.InteropServices;
-using System.Drawing.Drawing2D;
-using Continental.eCAL.Core;
-using Google.Protobuf;
-using LiveSplit.ObsPipe;
+using System.Windows.Forms;
+using System.Xml;
 using ObsPipeProto = global::ObsPipe.Proto;
 
 namespace LiveSplit.UI.Components
 {
     public class ObsPipeComponent : LogicComponent, IDeactivatableComponent
     {
+        enum Status
+        {
+            Operational = 0,
+            FailedToInitECAL,
+            FailedToStartPublisher,
+            FailedToRegisterPostPaintEvent,
+            Stopped,
+            Disposed,
+        }
+
         public override string ComponentName => "OBS Pipe";
         public string TaskName => "obs-pipe-publisher";
         public bool Activated { get; set; }
@@ -42,10 +50,12 @@ namespace LiveSplit.UI.Components
                 var ppe = State.Form as IPostPaintEvent;
                 if (ppe == null)
                 {
+                    SetStatus(Status.FailedToRegisterPostPaintEvent);
                 }
                 else
                 {
                     ppe.RegisterEventHandler(OnPostPaint);
+                    SetStatus(Status.Operational);
                 }
             }
         }
@@ -58,9 +68,17 @@ namespace LiveSplit.UI.Components
                 ppe.UnregisterEventHandler(OnPostPaint);
             }
             StopPublisher();
+            SetStatus(Status.Disposed);
         }
 
-        public override void Update(IInvalidator invalidator, LiveSplitState state, float width, float height, LayoutMode mode) { }
+        public override void Update(
+            IInvalidator    invalidator,
+            LiveSplitState  state,
+            float           width,
+            float           height,
+            LayoutMode      mode)
+        {
+        }
 
         public override Control GetSettingsControl(LayoutMode mode)
         {
@@ -84,11 +102,14 @@ namespace LiveSplit.UI.Components
             Util.Initialize(TaskName);
             if (Util.Ok() != true)
             {
+                SetStatus(Status.FailedToInitECAL);
                 return false;
             }
             else
             {
-                FramePublisher = new ProtobufPublisher<ObsPipeProto.Frame>("pipe0");
+                FramePublisher = new ProtobufPublisher<ObsPipeProto.Frame>(Settings.PipeName);
+                FramePublisher.ShmEnableZeroCopy(Settings.ShmZeroCopyEnabled);
+                FramePublisher.ShmSetBufferCount(Settings.ShmBufferCount);
                 return true;
             }
         }
@@ -96,6 +117,7 @@ namespace LiveSplit.UI.Components
         private void StopPublisher()
         {
             Util.Terminate();
+            SetStatus(Status.Stopped);
         }
 
         private void OnPostPaint(object sender, PostPaintEventArgs e)
@@ -131,16 +153,54 @@ namespace LiveSplit.UI.Components
 
         private ByteString PrepareData(Bitmap bitmap)
         {
-            var rect = new Rectangle(0, 0, bitmap.Width, bitmap.Height);
-            var bitmapData = bitmap.LockBits(rect, ImageLockMode.ReadOnly, bitmap.PixelFormat);
-            var length = bitmapData.Stride * bitmapData.Height;
+            if (Settings.ImageFormat == ObsPipe.ImageFormat.Raw)
+            {
+                var rect = new Rectangle(0, 0, bitmap.Width, bitmap.Height);
+                var bitmapData = bitmap.LockBits(rect, ImageLockMode.ReadOnly, bitmap.PixelFormat);
+                var length = bitmapData.Stride * bitmapData.Height;
 
-            var buffer = new byte[length];
+                var buffer = new byte[length];
 
-            Marshal.Copy(bitmapData.Scan0, buffer, 0, length);
-            bitmap.UnlockBits(bitmapData);
+                Marshal.Copy(bitmapData.Scan0, buffer, 0, length);
+                bitmap.UnlockBits(bitmapData);
 
-            return buffer.Length > 0 ? ByteString.CopyFrom(buffer) : null;
+                return buffer.Length > 0 ? ByteString.CopyFrom(buffer) : ByteString.Empty;
+            }
+            else
+            {
+                var memoryStream = new MemoryStream();
+                var format = ObsPipeHelpers.ImageFormatToSystem(Settings.ImageFormat);
+                bitmap.Save(memoryStream, format);
+                return memoryStream.Length > 0
+                    ? ByteString.CopyFrom(memoryStream.ToArray())
+                    : ByteString.Empty
+                    ;
+            }
+        }
+
+        private void SetStatus(Status status)
+        {
+            switch (status)
+            {
+                case Status.Operational:
+                    Settings.Status = "Operational";
+                    break;
+                case Status.FailedToInitECAL:
+                    Settings.Status = "Failed to initialize eCAL!";
+                    break;
+                case Status.FailedToStartPublisher:
+                    Settings.Status = "Failed to start publisher!";
+                    break;
+                case Status.FailedToRegisterPostPaintEvent:
+                    Settings.Status = "Failed to register post paint event!";
+                    break;
+                case Status.Stopped:
+                    Settings.Status = "Stopped";
+                    break;
+                case Status.Disposed:
+                    Settings.Status = "Disposed";
+                    break;
+            }
         }
     }
 }

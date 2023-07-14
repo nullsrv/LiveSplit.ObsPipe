@@ -54,6 +54,29 @@ namespace LiveSplit.ObsPipe
             throw new ArgumentException("Invalid image format");
         }
 
+        public static ImageFormat ImageFormatFromSystem(System.Drawing.Imaging.ImageFormat format)
+        {
+            if (format == System.Drawing.Imaging.ImageFormat.Bmp)  return ImageFormat.Bmp;
+            if (format == System.Drawing.Imaging.ImageFormat.Png)  return ImageFormat.Png;
+            if (format == System.Drawing.Imaging.ImageFormat.Jpeg) return ImageFormat.Jpeg;
+            if (format == System.Drawing.Imaging.ImageFormat.Tiff) return ImageFormat.Tiff;
+
+            throw new ArgumentException("Unsupported image format");
+        }
+
+        public static System.Drawing.Imaging.ImageFormat ImageFormatToSystem(ImageFormat format)
+        {
+            switch (format)
+            {
+                case ImageFormat.Bmp:  return System.Drawing.Imaging.ImageFormat.Bmp;
+                case ImageFormat.Jpeg: return System.Drawing.Imaging.ImageFormat.Jpeg;
+                case ImageFormat.Png:  return System.Drawing.Imaging.ImageFormat.Png;
+                case ImageFormat.Tiff: return System.Drawing.Imaging.ImageFormat.Tiff;
+            }
+
+            throw new ArgumentException("Unsupported image format");
+        }
+
         public static PixelFormat PixelFormatFromProto(ObsPipeProto.PixelFormat format)
         {
             switch (format) 
@@ -76,6 +99,13 @@ namespace LiveSplit.ObsPipe
             throw new ArgumentException("Invalid pixel format");
         }
 
+        public static PixelFormat PixelFormatFromSystem(System.Drawing.Imaging.PixelFormat format)
+        {
+            if (format == System.Drawing.Imaging.PixelFormat.Format32bppArgb) return PixelFormat.Bgra; // ??
+
+            throw new ArgumentException("Invalid pixel format");
+        }
+
         public static Compression CompressionFromProto(ObsPipeProto.Compression compression)
         {
             switch (compression)
@@ -85,23 +115,6 @@ namespace LiveSplit.ObsPipe
             }
 
             throw new ArgumentException("Invalid compression");
-        }
-
-        public static ImageFormat ImageFormatFromSystem(System.Drawing.Imaging.ImageFormat format)
-        {
-            if (format == System.Drawing.Imaging.ImageFormat.Bmp)  return ImageFormat.Bmp;
-            if (format == System.Drawing.Imaging.ImageFormat.Png)  return ImageFormat.Png;
-            if (format == System.Drawing.Imaging.ImageFormat.Jpeg) return ImageFormat.Jpeg;
-            if (format == System.Drawing.Imaging.ImageFormat.Tiff) return ImageFormat.Tiff;
-            
-            throw new ArgumentException("Invalid image format");
-        }
-
-        public static PixelFormat PixelFormatFromSystem(System.Drawing.Imaging.PixelFormat format)
-        {
-            if (format == System.Drawing.Imaging.PixelFormat.Format32bppArgb) return PixelFormat.Bgra; // ??
-
-            throw new ArgumentException("Invalid pixel format");
         }
 
         public static Google.Protobuf.WellKnownTypes.Timestamp ToGoogleTimestamp(DateTime timestamp)

@@ -21,6 +21,11 @@ namespace LiveSplit.ObsPipe
             var path = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             var dll = System.IO.Path.Combine(path, (Environment.Is64BitProcess ? @"x64\" : @"x86\") + assemblyName);
 
+            if (!File.Exists(dll))
+            {
+                dll = System.IO.Path.Combine(path, assemblyName);
+            }
+
             return File.Exists(dll) ? System.Reflection.Assembly.LoadFile(dll) : null;
         }
     }

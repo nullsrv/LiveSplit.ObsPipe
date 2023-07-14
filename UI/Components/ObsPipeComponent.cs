@@ -20,10 +20,9 @@ namespace LiveSplit.UI.Components
         public bool Activated { get; set; }
         private LiveSplitState State { get; set; }
         private ObsPipeSettings Settings { get; set; }
-
         static ObsPipeComponent()
         {
-            ModuleInitializer.Run();
+            //ModuleInitializer.Run();
         }
         public ObsPipeComponent(LiveSplitState state)
         {

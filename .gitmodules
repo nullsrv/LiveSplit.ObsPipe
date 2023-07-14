@@ -1,0 +1,4 @@
+[submodule "Protos"]
+	path = Protos
+	url = https://github.com/nullsrv/obs-pipe-protos.git
+	branch = devel

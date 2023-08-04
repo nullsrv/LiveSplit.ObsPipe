@@ -124,7 +124,7 @@ namespace LiveSplit.UI.Components
         {
             var bytes = PrepareData(e.Bitmap);
 
-            var imageFormat = ObsPipe.ImageFormat.Raw;
+            var imageFormat = Settings.ImageFormat;
             var pixelFormat = ObsPipeHelpers.PixelFormatFromSystem(e.Bitmap.PixelFormat);
 
             var frame = new ObsPipeProto.Frame
